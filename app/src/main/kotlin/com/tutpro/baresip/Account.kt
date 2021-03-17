@@ -21,7 +21,8 @@ class Account(val accp: String) {
     var regint = Api.account_regint(accp)
     var mediaEnc = Api.account_mediaenc(accp)
     var preferIPv6Media = false
-    var answerMode = ""
+    var dtmfMode = Api.account_dtmfmode(accp)
+    var answerMode = Api.account_answermode(accp)
     var vmUri = Api.account_vm_uri(accp)
     var vmNew = 0
     var vmOld = 0
@@ -56,8 +57,6 @@ class Account(val accp: String) {
 
         val extra = Api.account_extra(accp)
         preferIPv6Media = Utils.paramValue(extra,"prefer_ipv6_media") == "yes"
-        answerMode = Utils.paramValue(extra,"answer_mode")
-        if (answerMode == "") answerMode = "manual"
         callHistory = Utils.paramValue(extra,"call_history") == ""
 
     }
@@ -71,20 +70,20 @@ class Account(val accp: String) {
         else
             res = ""
 
-        res = res + "<$luri>"
+        res = "$res<$luri>"
 
-        if (authUser != "") res = res + ";auth_user=\"${authUser}\""
+        if (authUser != "") res += ";auth_user=\"${authUser}\""
 
         if ((authPass != "") && !MainActivity.aorPasswords.containsKey(aor))
-            res = res + ";auth_pass=\"${authPass}\""
+            res += ";auth_pass=\"${authPass}\""
 
         if (outbound.size > 0) {
-            res = res + ";outbound=\"${outbound[0]}\""
+            res += ";outbound=\"${outbound[0]}\""
             if (outbound.size > 1) res = res + ";outbound2=\"${outbound[1]}\""
-            res = res + ";sipnat=outbound"
+            res = "$res;sipnat=outbound"
         }
 
-        if (mediaNat != "") res = res + ";medianat=${mediaNat}"
+        if (mediaNat != "") res += ";medianat=${mediaNat}"
 
         if (stunServer != "")
             res += ";stunserver=\"${stunServer}\""
@@ -97,22 +96,25 @@ class Account(val accp: String) {
 
         if (audioCodec.size > 0) {
             var first = true
-            res = res + ";audio_codecs="
+            res = "$res;audio_codecs="
             for (c in audioCodec)
                 if (first) {
-                    res = res + c
+                    res += c
                     first = false
                 } else {
-                    res = res + ",$c"
+                    res = "$res,$c"
                 }
         }
 
-        if (mediaEnc != "") res = res + ";mediaenc=${mediaEnc}"
+        if (mediaEnc != "") res += ";mediaenc=${mediaEnc}"
 
         if (vmUri == "")
-            res = res + ";mwi=no"
+            res = "$res;mwi=no"
         else
-            res = res + ";mwi=yes;vm_uri=\"$vmUri\""
+            res = "$res;mwi=yes;vm_uri=\"$vmUri\""
+
+        if (answerMode == Api.ANSWERMODE_AUTO)
+            res += ";answermode=auto"
 
         res += ";ptime=20;regint=${regint};regq=0.5;pubint=0;call_transfer=yes"
 
@@ -120,9 +122,6 @@ class Account(val accp: String) {
 
         if (!callHistory)
             extra += ";call_history=no"
-
-        if (answerMode == "auto")
-            extra += ";answer_mode=auto"
 
         if (preferIPv6Media)
             extra += ";prefer_ipv6_media=yes"
@@ -172,15 +171,12 @@ class Account(val accp: String) {
 
     fun removeAudioCodecs(codecModule: String) {
         when (codecModule) {
-            "g711" -> {
+            "g711" ->
                 removeAudioCodecsStartingWith("pcm")
-            }
-            "g722" -> {
+            "g722" ->
                 removeAudioCodecsStartingWith("g722/")
-            }
-            else -> {
+            else ->
                 removeAudioCodecsStartingWith(codecModule)
-            }
         }
     }
 
@@ -220,7 +216,7 @@ class Account(val accp: String) {
         }
 
         fun checkAuthPass(ap: String): Boolean {
-            return (ap.length > 0) && (ap.length <= 64) &&
+            return (ap.isNotEmpty()) && (ap.length <= 64) &&
                     Regex("^[ -~]*\$").matches(ap) && !ap.contains('"')
         }
     }

@@ -14,10 +14,6 @@ object Config {
 
         Log.d("Baresip", "Config is '$config'")
 
-        if (!config.contains("zrtp_hash")) {
-            config = "${config}zrtp_hash yes\n"
-        }
-
         if (!config.contains(Regex("ausrc_format s16"))) {
             config = "${config}ausrc_format s16\nauplay_format s16\nauenc_format s16\naudec_format s16\nmodule webrtc_aec.so\n"
         }
